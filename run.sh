@@ -1,12 +1,8 @@
 #!/bin/bash
 
-cd D.API  
+podman-compose -f ./D.API/mssql.yaml up -d
 
-# podman-compose -f ./mssql.yaml up -d
+dotnet watch run --project ./D.API/D.API.csproj &
+dotnet watch run --project ./D.UI/D.UI.csproj
 
-dotnet watch run
-
-# cd ../A.UI
-
-# dotnet watch run
 
