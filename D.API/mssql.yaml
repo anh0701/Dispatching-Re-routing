@@ -1,0 +1,16 @@
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: d-mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Passw0rd
+    ports:
+      - 5533:1433
+    volumes:
+      - d-vol:/var/opt/mssql
+      - ./init:/init
+    entrypoint: ["/bin/bash", "/init/entrypoint.sh"]
+volumes:
+  d-vol:
+    external: true
