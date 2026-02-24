@@ -2,32 +2,34 @@ using System.Data;
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
 
-[ApiController] 
+[ApiController]
 [Route("api/work-orders")]
 public class WorkOrdersController : ControllerBase
 {
-    private readonly IDbConnection _db;
+    private readonly WorkOrdersService workOrdersService;
 
-    public WorkOrdersController(IDbConnection db)
+    public WorkOrdersController(WorkOrdersService workOrdersService)
     {
-        _db = db;
+        this.workOrdersService = workOrdersService;
     }
+
+    // Lấy danh sách các Work Orders có trạng thái Planned (chưa sản xuất)
 
     [HttpGet("pending")]
-    public async Task<IActionResult> GetPlanned ()
+    public async Task<IActionResult> GetPlanned()
     {
-        string sql = "select * from WorkOrders where Status = 0";
-        var data = await _db.QueryAsync(sql);
-        return Ok(new {data});
+        var data = workOrdersService.GetPlanned();
+        return Ok(new { data });
     }
 
-    [HttpGet("/{id}/route-details")]
-    public async Task<IActionResult> GetRouteStep()
+    // Lấy chi tiết các bước (Route Steps) của một đơn hàng, 
+    // bao gồm cả việc gợi ý các máy (WorkCenter) 
+    // có khả năng đáp ứng dựa trên bảng ResourceCapabilities.
+
+    [HttpGet("{id}/route-details")]
+    public async Task<IActionResult> GetRouteStep(int id)
     {
-        var sql = """
-        
-        """;
-        var data = await _db.QueryAsync(sql);
-        return Ok(new {data});
+        var result = workOrdersService.GetRouteStep(id);
+        return Ok(new { result });
     }
 }

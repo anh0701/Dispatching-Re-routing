@@ -16,6 +16,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 
+builder.Services.AddScoped<DispatchingService>(); 
+builder.Services.AddScoped<WorkOrdersService>(); 
+builder.Services.AddScoped<WorkCentersService>(); 
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

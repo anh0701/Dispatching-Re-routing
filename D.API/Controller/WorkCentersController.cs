@@ -5,11 +5,19 @@ using Microsoft.AspNetCore.Mvc;
 [Route("api/work-centers")]
 public class WorkCentersController: ControllerBase
 {
-    private readonly IDbConnection _db;
+    private readonly WorkCentersService workCentersService;
 
-    public WorkCentersController(IDbConnection db)
+    public WorkCentersController(WorkCentersService workCentersService)
     {
-        _db = db;
+        this.workCentersService = workCentersService;
     }
+
+    // GET /api/work-centers/status: 
+    // Lấy danh sách máy kèm trạng thái (Running, Breakdown, Maintenance).
+    
+
+    // PATCH /api/work-centers/{id}/status: 
+    // Cập nhật trạng thái máy (ví dụ: khi máy hỏng, Dashboard sẽ cảnh báo không cho điều phối việc vào máy đó).
+
     
 }
