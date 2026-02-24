@@ -1,0 +1,122 @@
+@page "/scheduler"
+@inject IDialogService DialogService
+@rendermode InteractiveServer
+@* @inject ProductionService ProdService *@
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">MES Dispatching Board</MudText>
+
+    <MudDropContainer T="JobItem" Items="_jobs" ItemsSelector="@((item, dropzone) => item.Status == dropzone)"
+                      ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-1">
+        <ChildContent>
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudPaper Elevation="4" Class="pa-4 mud-background-gray" Style="min-height: 600px;">
+                        <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-4">Job Pool (Chờ gán)</MudText>
+                        <MudDropZone T="JobItem" Identifier="Pool" Class="rounded-lg pa-2"
+                                     Style="min-height:500px; border: 2px dashed #bdbdbd;" />
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="9">
+                    <MudGrid>
+                        @foreach (var m in _machines)
+                        {
+                            <MudItem xs="12" sm="6" md="4">
+                                <MudPaper Elevation="4" Class="pa-4" Style="@GetMachineStyle(m)">
+                                    <div class="d-flex justify-space-between align-center mb-4">
+                                        <MudText Typo="Typo.subtitle1"><b>@m.Name</b></MudText>
+                                        <MudChip T="string" Color="@(m.IsBroken? Color.Error: Color.Success)"
+                                                 Size="Size.Small">
+                                            @(m.IsBroken ? "BREAKDOWN" : "RUNNING")
+                                        </MudChip>
+                                    </div>
+
+                                    <MudDropZone T="JobItem" Identifier="@m.Name" Class="rounded pa-2"
+                                                 Style="min-height:150px; background: rgba(0,0,0,0.03)" />
+                                </MudPaper>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudItem>
+            </MudGrid>
+        </ChildContent>
+
+        <ItemRenderer>
+            <MudPaper Elevation="25" Class="pa-3 my-2 rounded-lg"
+                      Style="@($"border-left: 6px solid {context.Color}; cursor: pointer;")">
+                <div @onclick="@(() => OpenJobDetails(context))" style="width:100%; height:100%">
+                    <div class="d-flex justify-space-between">
+                        <MudText Typo="Typo.body1"><b>@context.OrderNo</b></MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Info" />
+                    </div>
+                    <MudText Typo="Typo.caption">Click để cấu hình</MudText>
+                </div>
+            </MudPaper>
+        </ItemRenderer>
+    </MudDropContainer>
+</MudContainer>
+
+@code {
+    private List<Machine> _machines = new() {
+        new Machine { Name = "CNC-01", IsBroken = false },
+        new Machine { Name = "WELD-02", IsBroken = false },
+        new Machine { Name = "PAINT-01", IsBroken = true },
+        new Machine { Name = "CNC-02", IsBroken = false }
+    };
+
+    private List<JobItem> _jobs = new() {
+        new JobItem { OrderNo = "WO-2026-001", Status = "Pool", OpName = "CNC", Color = "#2ecc71", Qty = 100, DueDate = "25/02" },
+        new JobItem { OrderNo = "WO-2026-002", Status = "Pool", OpName = "WELD", Color = "#3498db", Qty = 50, DueDate = "26/02" },
+        new JobItem { OrderNo = "WO-2026-003", Status = "CNC-01", OpName = "CNC", Color = "#e67e22", Qty = 200, DueDate =
+"24/02" }
+    };
+
+    private void ItemUpdated(MudItemDropInfo<JobItem> dropInfo)
+    {
+        var targetMachine = _machines.FirstOrDefault(m => m.Name == dropInfo.DropzoneIdentifier);
+        if (targetMachine != null && targetMachine.IsBroken)
+        {
+           // Snackbar noti error log
+            return;
+        }
+
+        dropInfo.Item.Status = dropInfo.DropzoneIdentifier;
+    }
+
+    private string GetMachineStyle(Machine m) => m.IsBroken
+        ? "border: 2px solid #ff5252; background: #fff5f5;"
+        : "border-top: 4px solid #4caf50;";
+
+    private async Task OpenJobDetails(JobItem job)
+    {
+        Console.WriteLine($"Đang mở Dialog cho Job: {job.OrderNo}");
+
+        var parameters = new DialogParameters { ["Job"] = job };
+
+        var dialog = await DialogService.ShowAsync<JobDetailDialog>("Cấu hình", parameters);
+        await dialog.Result;
+    }
+
+    @* private async Task ItemUpdated(MudItemDropInfo<JobItem> dropInfo)
+    {
+        var job = dropInfo.Item;
+        var originalStatus = job.Status; 
+        var targetMachine = _machines.FirstOrDefault(m => m.Name == dropInfo.DropzoneIdentifier);
+
+        if (targetMachine != null && targetMachine.IsBroken) return;
+
+        job.Status = dropInfo.DropzoneIdentifier;
+
+        try
+        {
+            await ProdService.UpdateJobStatusAsync(job.OrderNo, job.Status);
+            Snackbar.Add($"Đã lưu thay đổi cho {job.OrderNo}", Severity.Success);
+        }
+        catch (Exception)
+        {
+            job.Status = originalStatus;
+            Snackbar.Add("Lỗi kết nối Server. Không thể lưu!", Severity.Error);
+        }
+    } *@
+}

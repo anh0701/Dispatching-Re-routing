@@ -1,0 +1,44 @@
+@using MudBlazor
+@using Pages
+@rendermode InteractiveServer
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-3 mb-n1" />
+            Cấu hình Lệnh: @Job.OrderNo
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTextField Label="Sản lượng (Qty)" @bind-Value="Job.Qty" Variant="Variant.Outlined" Type="number" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudSelect T="string" Label="Độ ưu tiên" @bind-Value="Job.OpName" Variant="Variant.Outlined">
+                    <MudSelectItem T="string" Value="@("CNC")">CNC (Cắt)</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("WELD")">WELD (Hàn)</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("PAINT")">PAINT (Sơn)</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField Label="Thời hạn (Due Date)" @bind-Value="Job.DueDate" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Hủy</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Lưu thay đổi</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] 
+    private IMudDialogInstance MudDialog { get; set; } 
+
+    [Parameter] 
+    public JobItem Job { get; set; } = new();
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    private void Cancel() => MudDialog.Cancel();
+}

@@ -1,6 +1,11 @@
 #!/bin/bash
 
-cd D.API
+# cd D.API
 
-dotnet add package Dapper
-dotnet add package Microsoft.Data.SqlClient
+# dotnet add package Dapper
+# dotnet add package Microsoft.Data.SqlClient
+
+# cd D.UI
+# dotnet add package MudBlazor
+
+dotnet restore
