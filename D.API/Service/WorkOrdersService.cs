@@ -32,7 +32,7 @@ public class WorkOrdersService
             JOIN Operations o ON rs.OperationId = o.Id
             LEFT JOIN ResourceCapabilities rc ON o.Id = rc.OperationId
             LEFT JOIN WorkCenters wc ON rc.WorkCenterId = wc.Id
-            WHERE wo.Id = @Id
+            WHERE wo.Id = @Id and wc.Status = 1
             ORDER BY rs.StepOrder, rc.CycleTime ASC 
         """;
         var flatData = await _db.QueryAsync(sql, new { Id = id });
