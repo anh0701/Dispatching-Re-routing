@@ -18,7 +18,7 @@ public class WorkOrdersController : ControllerBase
     [HttpGet("pending")]
     public async Task<IActionResult> GetPlanned()
     {
-        var data = workOrdersService.GetPlanned();
+        var data = await workOrdersService.GetPlanned();
         return Ok(new { data });
     }
 
@@ -29,7 +29,7 @@ public class WorkOrdersController : ControllerBase
     [HttpGet("{id}/route-details")]
     public async Task<IActionResult> GetRouteStep(int id)
     {
-        var result = workOrdersService.GetRouteStep(id);
+        var result = await workOrdersService.GetRouteStep(id);
         return Ok(new { result });
     }
 }

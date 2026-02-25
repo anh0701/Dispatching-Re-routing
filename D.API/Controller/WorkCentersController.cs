@@ -12,6 +12,13 @@ public class WorkCentersController: ControllerBase
         this.workCentersService = workCentersService;
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetWorkCenters()
+    {
+        var data = await workCentersService.GetWorkCenters();
+        return Ok(new {data});
+    }
+
     // GET /api/work-centers/status: 
     // Lấy danh sách máy kèm trạng thái (Running, Breakdown, Maintenance).
     

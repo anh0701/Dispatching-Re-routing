@@ -1,4 +1,5 @@
 using System.Data;
+using Dapper;
 
 public class WorkCentersService
 {
@@ -7,6 +8,13 @@ public class WorkCentersService
     public WorkCentersService(IDbConnection db)
     {
         _db = db;
+    }
+
+    public async Task<dynamic> GetWorkCenters()
+    {
+        string sql = "select * from WorkCenters";
+        var data = await _db.QueryAsync(sql);
+        return data;
     }
     
 }

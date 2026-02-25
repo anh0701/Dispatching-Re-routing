@@ -9,6 +9,13 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddMudServices();
 
+builder.Services.AddHttpClient("MESApi", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5096/");
+});
+
+builder.Services.AddScoped<WorkOrderService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

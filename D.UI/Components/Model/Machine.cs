@@ -1,11 +1,10 @@
 public class Machine
 {
-    public Machine()
-    {
-    }
+    public int Id { get; set; }
 
-    public string Name { get; set; }
-    public bool IsBroken { get; set; }
+    public string Code { get; set; } = string.Empty;
 
-    
+    public string Name { get; set; } = string.Empty;
+
+    public int Status { get; set; }
 }
