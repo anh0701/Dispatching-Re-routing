@@ -46,8 +46,23 @@ GO
 -- WHERE rc.OperationId IN (3,4)
 --   AND wc.Status = 1;
 
-SELECT Id, Code, Status
-FROM WorkCenters
-WHERE Id IN (4,5)
+-- SELECT Id, Code, Status
+-- FROM WorkCenters
+-- WHERE Id IN (4,5)
+
+SELECT 
+    db.WorkOrderId,
+    db.WorkCenterId,
+    db.OperationId,
+    db.ScheduledStart,
+    db.ScheduledEnd,
+    db.Status,
+    wo.OrderNo AS WorkOrderNo,
+    wc.Name AS WorkCenterName
+FROM DispatchingBoard db
+JOIN WorkOrders wo ON wo.Id = db.WorkOrderId
+JOIN WorkCenters wc ON wc.Id = db.WorkCenterId
+-- WHERE CAST(db.ScheduledStart AS DATE) = CAST(@Date AS DATE)
+ORDER BY wc.Id, db.ScheduledStart
 
 GO

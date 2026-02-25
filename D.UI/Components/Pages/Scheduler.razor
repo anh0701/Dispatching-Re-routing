@@ -2,8 +2,9 @@
 @using MudBlazor
 @inject WorkOrderService WorkOrderService
 @inject IDialogService DialogService
-@rendermode InteractiveServer
 @inject ISnackbar Snackbar
+@rendermode InteractiveServer
+@inject IJSRuntime JS
 
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-4" @onmousemove="OnMouseMove" @onmouseup="OnMouseUp">
 
@@ -44,9 +45,15 @@
         <MudItem xs="12" md="9">
             <MudPaper Class="pa-3">
 
-                <MudText Typo="Typo.subtitle1" Class="mb-3">
-                    Machine Schedule
-                </MudText>
+                <MudStack Row AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
+                    <MudText Typo="Typo.subtitle1">
+                        Machine Schedule
+                    </MudText>
+
+                    <MudSpacer />
+
+                    <MudDatePicker Date="_selectedDate" Label="Chọn ngày" DateChanged="OnDateChanged" Dense="true" />
+                </MudStack>
 
                 @if (_machines is null)
                 {
@@ -54,27 +61,45 @@
                 }
                 else
                 {
-                    @foreach (var machine in _machines)
-                    {
-                        <div class="machine-row" @onmouseenter="() => _hoverMachineId = machine.Id"
-                             @onmouseleave="() => _hoverMachineId = null">
+                    <div id="timelineScroll" class="timeline-wrapper">
 
-                            <div class="machine-label">
-                                @machine.Name
-                            </div>
-
-                            <div class="timeline @( _hoverMachineId == machine.Id && _isDragging ? "timeline-hover" : "" )">
-
-                                @foreach (var task in _board.Where(x => x.WorkCenterId == machine.Id))
-                                {
-                                    <div class="task-bar">
-                                        @task.WorkOrderNo
-                                    </div>
-                                }
-
-                            </div>
+                        <!-- ===== HEADER GIỜ ===== -->
+                        <div class="time-header">
+                            @for (int h = 0; h < 24; h++)
+                            {
+                                <div class="time-cell">@($"{h:00}:00")</div>
+                            }
                         </div>
-                    }
+
+                        <!-- ===== MACHINE ROWS ===== -->
+                        @foreach (var machine in _machines)
+                        {
+                            <div class="machine-row" @onmouseenter="() => _hoverMachineId = machine.Id"
+                                 @onmouseleave="() => _hoverMachineId = null">
+
+                                <div class="machine-label">
+                                    @machine.Name
+                                </div>
+
+                                <div class="timeline @( _hoverMachineId == machine.Id && _isDragging ? "timeline-hover" : "" )">
+
+                                    @foreach (var task in _board.Where(x =>
+                                                                                                                                   x.WorkCenterId == machine.Id &&
+                                                                                                                                   x.ScheduledStart != null &&
+                                                                                                                                   x.ScheduledEnd != null))
+                                    {
+                                        <div class="task-bar" style="
+                                            left:@($"{GetLeftPercent(task.ScheduledStart)}%");
+                                            width:@($"{GetWidthPercent(task.ScheduledStart, task.ScheduledEnd)}%");
+                                            ">
+                                            @task.WorkOrderNo
+                                        </div>
+                                    }
+
+                                </div>
+                            </div>
+                        }
+                    </div>
                 }
 
             </MudPaper>
@@ -84,7 +109,6 @@
 
 </MudContainer>
 
-<!-- ================= DRAG GHOST ================= -->
 @if (_isDragging && _draggingJob != null)
 {
     <div class="drag-ghost" style="left:@(_mouseX + 10)px; top:@(_mouseY + 10)px;">
@@ -92,103 +116,83 @@
     </div>
 }
 
-<style>
-    .job-card {
-        border: 1px solid #ddd;
-        padding: 8px;
-        margin-bottom: 8px;
-        border-radius: 6px;
-        background: #fafafa;
-        cursor: grab;
-        user-select: none;
-    }
-
-    .job-card:active {
-        cursor: grabbing;
-    }
-
-    .machine-row {
-        display: flex;
-        border-bottom: 1px solid #eee;
-        padding: 8px 0;
-    }
-
-    .machine-label {
-        width: 180px;
-        font-weight: 600;
-    }
-
-    .timeline {
-        flex: 1;
-        position: relative;
-        min-height: 40px;
-        background: #f5f5f5;
-        border-radius: 6px;
-        transition: all .15s ease;
-    }
-
-    .timeline-hover {
-        background: #e8f5e9;
-        outline: 2px dashed #4caf50;
-    }
-
-    .task-bar {
-        display: inline-block;
-        background: #4caf50;
-        color: white;
-        padding: 4px 10px;
-        margin: 4px;
-        border-radius: 4px;
-        font-size: 12px;
-    }
-
-    .drag-ghost {
-        position: fixed;
-        pointer-events: none;
-        background: #1976d2;
-        color: white;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        z-index: 9999;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
-        transform: translate(-50%, -50%);
-    }
-</style>
-
 @code {
 
     private List<JobItem>? _jobs;
     private List<Machine>? _machines;
     private List<DispatchTaskDto> _board = new();
 
-    // ===== DRAG STATE =====
+    private DateTime _selectedDate = DateTime.Today;
+    private List<int> _hours = Enumerable.Range(0, 24).ToList();
+
     private JobItem? _draggingJob;
     private bool _isDragging;
     private double _mouseX;
     private double _mouseY;
     private int? _hoverMachineId;
 
+    private const double TimelineWidthPx = 2400;
+    private bool _scrolled;
+
     protected override async Task OnInitializedAsync()
-    {
-        await LoadData();
-
-        Console.WriteLine($"Jobs: {_jobs?.Count}");
-        Console.WriteLine($"Machines: {_machines?.Count}");
-        Console.WriteLine($"Board: {_board?.Count}");
-
-        foreach (var t in _board)
-            Console.WriteLine($"Task -> WC:{t.WorkCenterId} WO:{t.WorkOrderNo}");
-    }
-
-    private async Task LoadData()
     {
         _jobs = await WorkOrderService.GetPendingJobsAsync();
         _machines = await WorkOrderService.GetWorkCentersAsync();
-        _board = await WorkOrderService.GetBoardAsync(DateTime.Today);
+        await LoadBoardOnly();
     }
 
-    // ================= DRAG =================
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_scrolled)
+        {
+            _scrolled = true;
+
+            await JS.InvokeVoidAsync(
+                "scrollTimelineToHour",
+                8,
+                TimelineWidthPx
+            );
+        }
+    }
+
+    private async Task LoadBoardOnly()
+    {
+        _board = await WorkOrderService.GetBoardAsync(_selectedDate);
+        StateHasChanged();
+    }
+
+    private async Task OnDateChanged(DateTime? date)
+    {
+        if (date is null) return;
+        _selectedDate = date.Value;
+        await LoadBoardOnly();
+    }
+
+    private double GetLeftPercent(DateTime? start)
+    {
+        if (start == null) return 0;
+
+        var baseDate = _selectedDate.Date;
+        var span = start.Value - baseDate;
+
+        var minutes = span.TotalMinutes;
+
+        var px = minutes / (24 * 60) * TimelineWidthPx;
+
+        return px / TimelineWidthPx * 100;
+    }
+
+    private double GetWidthPercent(DateTime? start, DateTime? end)
+    {
+        if (start == null || end == null) return 2;
+
+        var span = end.Value - start.Value;
+        var minutes = span.TotalMinutes;
+
+        var px = minutes / (24 * 60) * TimelineWidthPx;
+
+        return Math.Max(1, px / TimelineWidthPx * 100);
+    }
 
     private void StartDrag(MouseEventArgs e, JobItem job)
     {
@@ -201,7 +205,6 @@
     private void OnMouseMove(MouseEventArgs e)
     {
         if (!_isDragging) return;
-
         _mouseX = e.ClientX;
         _mouseY = e.ClientY;
     }
@@ -212,7 +215,6 @@
 
         if (_hoverMachineId.HasValue && _draggingJob != null)
         {
-            // ⭐ LẤY ROUTE
             var route = await WorkOrderService.GetRouteDetailsAsync(_draggingJob.Id);
 
             var op = route?.Steps?
@@ -228,22 +230,18 @@
                 var result = await WorkOrderService.AssignJobAsync(
                     _draggingJob.Id,
                     _hoverMachineId.Value,
-                    op.OperationId, 
+                    op.OperationId,
                     op.StepOrder,
                     DateTime.Now);
 
                 if (result.ok)
                 {
                     Snackbar.Add("Gán lệnh thành công", Severity.Success);
-                    await LoadData();
+                    await LoadBoardOnly();
                 }
                 else
                 {
-                    Snackbar.Add(
-                        string.IsNullOrWhiteSpace(result.error)
-                            ? "Không thể gán lệnh"
-                            : result.error,
-                        Severity.Error);
+                    Snackbar.Add(result.error ?? "Không thể gán lệnh", Severity.Error);
                 }
             }
         }
@@ -254,8 +252,6 @@
 
         StateHasChanged();
     }
-
-    // ================= DIALOG =================
 
     private async Task OpenJobDialog(JobItem job)
     {
@@ -280,7 +276,7 @@
 
         if (!result.Canceled)
         {
-            await LoadData();
+            await LoadBoardOnly();
             StateHasChanged();
         }
     }
