@@ -16,11 +16,11 @@ public class DispatchingController: ControllerBase
     // Lấy toàn bộ dữ liệu đang hiển thị trên bảng 
     // (lọc theo khoảng thời gian hoặc theo từng Máy)
 
-    [HttpGet]
-    public async Task<IActionResult> GetDispatching ()
+   [HttpGet]
+    public async Task<IActionResult> GetBoard([FromQuery] DateTime date)
     {
-        var data = await dispatchingService.GetDispatching();
-        return Ok(new {data});
+        var data = await dispatchingService.GetBoard(date);
+        return Ok(new { data });
     }
 
     // Gán việc vào máy (Tính toán thời gian tự động)
@@ -28,7 +28,9 @@ public class DispatchingController: ControllerBase
     public async Task<IActionResult> AssignTaskToBoard(AssignmentRequest req)
     {
         var data = await dispatchingService.AssignTaskToBoard(req);
-        return Ok(new {data});
+        if (!data.ok)
+            return BadRequest(data.error);
+        return Ok();
     }
 
     // một API check xem máy có đang bận trong khoảng ScheduledStart đến ScheduledEnd không.

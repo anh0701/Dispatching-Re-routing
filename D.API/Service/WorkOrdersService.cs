@@ -21,19 +21,29 @@ public class WorkOrdersService
     {
         var sql = """
             SELECT 
-                wo.Id AS WorkOrderId, wo.OrderNo, p.ProductName,
-                rs.StepOrder, o.Id AS OperationId, o.OpCode, o.Description,
-                wc.Id AS WorkCenterId, wc.Code AS WorkCenterCode, wc.Name AS WorkCenterName,
-                rc.CycleTime, rc.SetupTime
+                wo.Id AS WorkOrderId, 
+                wo.OrderNo, 
+                p.ProductName,
+                rs.StepOrder, 
+                o.Id AS OperationId, 
+                o.OpCode, 
+                o.Description,
+                wc.Id AS WorkCenterId, 
+                wc.Code AS WorkCenterCode, 
+                wc.Name AS WorkCenterName,
+                rc.CycleTime, 
+                rc.SetupTime
             FROM WorkOrders wo
             JOIN Products p ON wo.ProductId = p.Id
             JOIN ProductionRoutes pr ON p.Id = pr.ProductId AND pr.IsDefault = 1
             JOIN RouteSteps rs ON pr.Id = rs.RouteId
             JOIN Operations o ON rs.OperationId = o.Id
             LEFT JOIN ResourceCapabilities rc ON o.Id = rc.OperationId
-            LEFT JOIN WorkCenters wc ON rc.WorkCenterId = wc.Id
-            WHERE wo.Id = @Id and wc.Status = 1
-            ORDER BY rs.StepOrder, rc.CycleTime ASC 
+            LEFT JOIN WorkCenters wc 
+                ON rc.WorkCenterId = wc.Id 
+                AND wc.Status = 1
+            WHERE wo.Id = @Id
+            ORDER BY rs.StepOrder, rc.CycleTime ASC;
         """;
         var flatData = await _db.QueryAsync(sql, new { Id = id });
 

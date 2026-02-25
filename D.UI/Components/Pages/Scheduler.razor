@@ -3,8 +3,9 @@
 @inject WorkOrderService WorkOrderService
 @inject IDialogService DialogService
 @rendermode InteractiveServer
+@inject ISnackbar Snackbar
 
-<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4" @onmousemove="OnMouseMove" @onmouseup="OnMouseUp">
 
     <MudText Typo="Typo.h5" Class="mb-4">
         MES dispatching dashboard
@@ -12,6 +13,7 @@
 
     <MudGrid>
 
+        <!-- ================= JOB POOL ================= -->
         <MudItem xs="12" md="3">
             <MudPaper Class="pa-3">
 
@@ -27,9 +29,7 @@
                 {
                     @foreach (var job in _jobs)
                     {
-                        <div class="job-card"
-                             draggable="true"
-                             @ondragstart="e => OnDragStart(e, job)">
+                        <div class="job-card" @onmousedown="(e) => StartDrag(e, job)" @onclick="() => OpenJobDialog(job)">
 
                             <b>@job.OrderNo</b><br />
                             <small>@job.ProductName</small>
@@ -40,6 +40,7 @@
             </MudPaper>
         </MudItem>
 
+        <!-- ================= MACHINE BOARD ================= -->
         <MudItem xs="12" md="9">
             <MudPaper Class="pa-3">
 
@@ -55,15 +56,14 @@
                 {
                     @foreach (var machine in _machines)
                     {
-                        <div class="machine-row"
-                             @ondragover="AllowDrop"
-                             @ondrop="e => OnDrop(e, machine)">
+                        <div class="machine-row" @onmouseenter="() => _hoverMachineId = machine.Id"
+                             @onmouseleave="() => _hoverMachineId = null">
 
                             <div class="machine-label">
                                 @machine.Name
                             </div>
 
-                            <div class="timeline">
+                            <div class="timeline @( _hoverMachineId == machine.Id && _isDragging ? "timeline-hover" : "" )">
 
                                 @foreach (var task in _board.Where(x => x.WorkCenterId == machine.Id))
                                 {
@@ -84,46 +84,76 @@
 
 </MudContainer>
 
+<!-- ================= DRAG GHOST ================= -->
+@if (_isDragging && _draggingJob != null)
+{
+    <div class="drag-ghost" style="left:@(_mouseX + 10)px; top:@(_mouseY + 10)px;">
+        @_draggingJob.OrderNo
+    </div>
+}
+
 <style>
+    .job-card {
+        border: 1px solid #ddd;
+        padding: 8px;
+        margin-bottom: 8px;
+        border-radius: 6px;
+        background: #fafafa;
+        cursor: grab;
+        user-select: none;
+    }
 
-.job-card {
-    border: 1px solid #ddd;
-    padding: 8px;
-    margin-bottom: 8px;
-    border-radius: 6px;
-    background: #fafafa;
-    cursor: grab;
-}
+    .job-card:active {
+        cursor: grabbing;
+    }
 
-.machine-row {
-    display: flex;
-    border-bottom: 1px solid #eee;
-    padding: 8px 0;
-}
+    .machine-row {
+        display: flex;
+        border-bottom: 1px solid #eee;
+        padding: 8px 0;
+    }
 
-.machine-label {
-    width: 180px;
-    font-weight: 600;
-}
+    .machine-label {
+        width: 180px;
+        font-weight: 600;
+    }
 
-.timeline {
-    flex: 1;
-    position: relative;
-    min-height: 40px;
-    background: #f5f5f5;
-    border-radius: 6px;
-}
+    .timeline {
+        flex: 1;
+        position: relative;
+        min-height: 40px;
+        background: #f5f5f5;
+        border-radius: 6px;
+        transition: all .15s ease;
+    }
 
-.task-bar {
-    display: inline-block;
-    background: #4caf50;
-    color: white;
-    padding: 4px 10px;
-    margin: 4px;
-    border-radius: 4px;
-    font-size: 12px;
-}
+    .timeline-hover {
+        background: #e8f5e9;
+        outline: 2px dashed #4caf50;
+    }
 
+    .task-bar {
+        display: inline-block;
+        background: #4caf50;
+        color: white;
+        padding: 4px 10px;
+        margin: 4px;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+
+    .drag-ghost {
+        position: fixed;
+        pointer-events: none;
+        background: #1976d2;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        z-index: 9999;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+        transform: translate(-50%, -50%);
+    }
 </style>
 
 @code {
@@ -132,11 +162,23 @@
     private List<Machine>? _machines;
     private List<DispatchTaskDto> _board = new();
 
+    // ===== DRAG STATE =====
     private JobItem? _draggingJob;
+    private bool _isDragging;
+    private double _mouseX;
+    private double _mouseY;
+    private int? _hoverMachineId;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
+
+        Console.WriteLine($"Jobs: {_jobs?.Count}");
+        Console.WriteLine($"Machines: {_machines?.Count}");
+        Console.WriteLine($"Board: {_board?.Count}");
+
+        foreach (var t in _board)
+            Console.WriteLine($"Task -> WC:{t.WorkCenterId} WO:{t.WorkOrderNo}");
     }
 
     private async Task LoadData()
@@ -146,30 +188,100 @@
         _board = await WorkOrderService.GetBoardAsync(DateTime.Today);
     }
 
-    private void OnDragStart(DragEventArgs e, JobItem job)
+    // ================= DRAG =================
+
+    private void StartDrag(MouseEventArgs e, JobItem job)
     {
         _draggingJob = job;
+        _isDragging = true;
+        _mouseX = e.ClientX;
+        _mouseY = e.ClientY;
     }
 
-    private void AllowDrop(DragEventArgs e)
+    private void OnMouseMove(MouseEventArgs e)
     {
-        @* e.PreventDefault(); *@
+        if (!_isDragging) return;
+
+        _mouseX = e.ClientX;
+        _mouseY = e.ClientY;
     }
 
-    private async Task OnDrop(DragEventArgs e, Machine machine)
-{
-    if (_draggingJob is null)
-        return;
+    private async Task OnMouseUp(MouseEventArgs e)
+    {
+        if (!_isDragging) return;
 
-    await WorkOrderService.AssignJobAsync(
-        _draggingJob.Id,
-        machine.Id,
-        stepOrder: 1,
-        scheduledStart: DateTime.Now);
+        if (_hoverMachineId.HasValue && _draggingJob != null)
+        {
+            // ⭐ LẤY ROUTE
+            var route = await WorkOrderService.GetRouteDetailsAsync(_draggingJob.Id);
 
-    _draggingJob = null;
+            var op = route?.Steps?
+                .OrderBy(x => x.StepOrder)
+                .FirstOrDefault();
 
-    await LoadData();
-    StateHasChanged();
-}
+            if (op is null)
+            {
+                Snackbar.Add("Không có máy khả dụng", Severity.Error);
+            }
+            else
+            {
+                var result = await WorkOrderService.AssignJobAsync(
+                    _draggingJob.Id,
+                    _hoverMachineId.Value,
+                    op.OperationId, 
+                    op.StepOrder,
+                    DateTime.Now);
+
+                if (result.ok)
+                {
+                    Snackbar.Add("Gán lệnh thành công", Severity.Success);
+                    await LoadData();
+                }
+                else
+                {
+                    Snackbar.Add(
+                        string.IsNullOrWhiteSpace(result.error)
+                            ? "Không thể gán lệnh"
+                            : result.error,
+                        Severity.Error);
+                }
+            }
+        }
+
+        _isDragging = false;
+        _draggingJob = null;
+        _hoverMachineId = null;
+
+        StateHasChanged();
+    }
+
+    // ================= DIALOG =================
+
+    private async Task OpenJobDialog(JobItem job)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Job"] = job
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<JobDetailDialog>(
+            "Cấu hình lệnh",
+            parameters,
+            options);
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadData();
+            StateHasChanged();
+        }
+    }
 }

@@ -8,9 +8,9 @@ public class DispatchTaskDto
 
     public int StepOrder { get; set; }
 
-    public DateTime ScheduledStart { get; set; }
+    public DateTime? ScheduledStart { get; set; }
 
-    public DateTime ScheduledEnd { get; set; }
+    public DateTime? ScheduledEnd { get; set; }
 
     public string Status { get; set; } = "Scheduled";
 

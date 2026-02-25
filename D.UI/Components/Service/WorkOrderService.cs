@@ -38,25 +38,39 @@ public class WorkOrderService
         return res;
     }
 
-    public async Task<bool> AssignJobAsync(
-        int workOrderId,
-        int workCenterId,
-        int stepOrder,
-        DateTime scheduledStart)
+    public async Task<(bool ok, string? error)> AssignJobAsync(
+    int workOrderId,
+    int workCenterId,
+    int operationId,
+    int stepOrder,
+    DateTime scheduledStart)
     {
-        var response = await _http.PostAsJsonAsync(
-            "api/dispatching-board/assign",
-            new
-            {
-                WorkOrderId = workOrderId,
-                WorkCenterId = workCenterId,
-                StepOrder = stepOrder,
-                ScheduledStart = scheduledStart
-            });
+        try
+        {
+            Console.WriteLine($"REQ → WO:{workOrderId} WC:{workCenterId} operationId: {operationId} StepOrder: {stepOrder} ScheduledStart: {scheduledStart}");
 
-        return response.IsSuccessStatusCode;
+            var response = await _http.PostAsJsonAsync(
+                "api/dispatching-board/assign",
+                new
+                {
+                    WorkOrderId = workOrderId,
+                    WorkCenterId = workCenterId,
+                    OperationId = operationId, 
+                    StepOrder = stepOrder,
+                    ScheduledStart = scheduledStart
+                });
+
+            if (response.IsSuccessStatusCode)
+                return (true, null);
+
+            var msg = await response.Content.ReadAsStringAsync();
+            return (false, msg);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
     }
-
     public async Task<bool> UnassignAsync(int dispatchId)
     {
         var response = await _http.DeleteAsync(
