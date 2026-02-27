@@ -31,7 +31,7 @@
                     @foreach (var job in _jobs)
                     {
                         <div class="job-card" @onmousedown="(e) => StartDrag(e, job)" @onclick="() => OpenJobDialog(job)">
-
+                            <span class="job-dot @(HasAvailableMachine(job) ? "job-ok" : "job-bad")"></span>
                             <b>@job.OrderNo</b><br />
                             <small>@job.ProductName</small>
                         </div>
@@ -86,9 +86,9 @@
                                 <div class="timeline @( _hoverMachineId == machine.Id && _isDragging ? "timeline-hover" : "" )">
 
                                     @foreach (var task in _board.Where(x =>
-                                                                                                                                                                       x.WorkCenterId == machine.Id &&
-                                                                                                                                                                       x.ScheduledStart != null &&
-                                                                                                                                                                       x.ScheduledEnd != null))
+                                                                                                                                                                                                                                                                                                                                                                                               x.WorkCenterId == machine.Id &&
+                                                                                                                                                                                                                                                                                                                                                                                               x.ScheduledStart != null &&
+                                                                                                                                                                                                                                                                                                                                                                                               x.ScheduledEnd != null))
                                     {
                                         <div class="task-bar" style="
                                             left:@($"{GetLeftPercent(task.ScheduledStart)}%");
@@ -136,10 +136,14 @@
     private const double TimelineWidthPx = 2400;
     private bool _scrolled;
 
+    private Dictionary<int, HashSet<int>> _jobMachineMap = new();
+
     protected override async Task OnInitializedAsync()
     {
         _jobs = await WorkOrderService.GetPendingJobsAsync();
         _machines = await WorkOrderService.GetWorkCentersAsync();
+
+        await PreloadJobCapabilities();
         await LoadBoardOnly();
     }
 
@@ -211,6 +215,20 @@
         _mouseY = e.ClientY;
     }
 
+    private async Task<DateTime> GetDropTimeAsync(double clientX)
+    {
+        var left = await JS.InvokeAsync<double>(
+            "getTimelineOffset",
+            "timelineScroll"
+        );
+
+        var offsetX = clientX - left;
+        if (offsetX < 0) offsetX = 0;
+
+        var minutes = offsetX / TimelineWidthPx * (24 * 60);
+
+        return _selectedDate.Date.AddMinutes(minutes);
+    }
     private async Task OnMouseUp(MouseEventArgs e)
     {
         if (!_isDragging) return;
@@ -218,6 +236,8 @@
         if (_hoverMachineId.HasValue && _draggingJob != null)
         {
             var route = await WorkOrderService.GetRouteDetailsAsync(_draggingJob.Id);
+
+            Console.WriteLine("Detail: " + string.Join(", ", route));
 
             var op = route?.Steps?
                 .OrderBy(x => x.StepOrder)
@@ -229,12 +249,13 @@
             }
             else
             {
+                var scheduledStart = await GetDropTimeAsync(e.ClientX);
                 var result = await WorkOrderService.AssignJobAsync(
                     _draggingJob.Id,
                     _hoverMachineId.Value,
                     op.OperationId,
                     op.StepOrder,
-                    DateTime.Now);
+                    scheduledStart);
 
                 if (result.ok)
                 {
@@ -291,4 +312,53 @@
         3 => "status-break",
         _ => ""
     };
+
+    private async Task PreloadJobCapabilities()
+    {
+        if (_jobs == null) return;
+
+        foreach (var job in _jobs)
+        {
+            var route = await WorkOrderService.GetRouteDetailsAsync(job.Id);
+
+
+            var machines = route?.Steps?
+                .SelectMany(s => s.AvailableMachines ?? [])
+                .Select(m => m.workCenterId)
+                .ToHashSet()
+                ?? new HashSet<int>();
+
+            Console.WriteLine($"Job {job.Id} steps: {route?.Steps?.Count}");
+
+            foreach (var step in route?.Steps ?? [])
+            {
+                Console.WriteLine($"Step {step.StepOrder} machines: {step.AvailableMachines?.Count}");
+            }
+            _jobMachineMap[job.Id] = machines;
+        }
+
+        foreach (var kv in _jobMachineMap)
+        {
+            Console.WriteLine($"Job {kv.Key}: {string.Join(",", kv.Value)}");
+        }
+    }
+
+    @* check khi machine hover *@
+    private bool IsJobRunnable(JobItem job)
+    {
+        if (!_hoverMachineId.HasValue) return false;
+
+        if (!_jobMachineMap.TryGetValue(job.Id, out var machines))
+            return false;
+
+        return machines.Contains(_hoverMachineId.Value);
+    }
+
+    @* co AvailableMachines thi hien thi mau xanh luon *@
+    private bool HasAvailableMachine(JobItem job)
+    {
+        if (!_jobMachineMap.TryGetValue(job.Id, out var machines))
+            return false;
+        return machines.Count > 0;
+    }
 }

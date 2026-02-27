@@ -47,7 +47,7 @@ public class WorkOrderService
     {
         try
         {
-            Console.WriteLine($"REQ → WO:{workOrderId} WC:{workCenterId} operationId: {operationId} StepOrder: {stepOrder} ScheduledStart: {scheduledStart}");
+            Console.WriteLine($"api/dispatching-board/assign: {workOrderId} - {workCenterId} - {operationId} - {stepOrder} - {scheduledStart.ToUniversalTime()}");
 
             var response = await _http.PostAsJsonAsync(
                 "api/dispatching-board/assign",
@@ -57,7 +57,7 @@ public class WorkOrderService
                     WorkCenterId = workCenterId,
                     OperationId = operationId, 
                     StepOrder = stepOrder,
-                    ScheduledStart = scheduledStart
+                    ScheduledStart = scheduledStart.ToUniversalTime()
                 });
 
             if (response.IsSuccessStatusCode)

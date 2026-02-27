@@ -10,3 +10,9 @@ window.scrollTimelineToHour = (hour, totalWidth) => {
         behavior: "smooth"
     });
 };
+
+window.getTimelineOffset = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return 0;
+    return el.getBoundingClientRect().left;
+};

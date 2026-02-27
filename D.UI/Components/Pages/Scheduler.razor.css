@@ -136,3 +136,19 @@
 .status-maint { background: #f59e0b; }
 .status-break { background: #ef4444; }
 .status-offline {background: grey;}
+
+.job-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.job-ok {
+    background: #16a34a; 
+}
+
+.job-bad {
+    background: #dc2626; 
+}

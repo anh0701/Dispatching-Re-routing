@@ -43,7 +43,11 @@ GO
 -- 6. LỆNH SẢN XUẤT (WorkOrders)
 INSERT INTO WorkOrders (OrderNo, ProductId, Quantity, Priority, DueDate, Status) VALUES 
 ('WO-2026-001', 1, 100, 10, '2026-12-31', 1), -- ID 1
-('WO-2026-002', 2, 500, 5, '2026-03-15', 0);  -- ID 2
+('WO-2026-002', 2, 500, 5, '2026-03-15', 0),    -- ID 2
+('WO-2026-005', 1, 300, 99, '2026-03-01', 0),   -- ID 3
+('WO-2026-006', 2, 1000, 2, '2026-06-15', 0),   -- ID 4
+('WO-2026-007', 1, 50, 7, '2026-04-10', 0)  -- ID 5
+;  
 GO
 
 -- Trạng thái 'Completed'
@@ -90,4 +94,25 @@ VALUES
 -- (WorkOrderId, WorkCenterId, OperationId, StepOrder, PlannedQuantity, Status, Note)
 -- VALUES 
 -- (4, 4, 3, 1, 50, 'Breakdown_Hold', 'Dừng điều độ do đơn hàng bị hủy');
+GO
+
+-- Đơn hàng WO-005 đang "chiếm dụng" máy để làm gấp
+INSERT INTO DispatchingBoard 
+(WorkOrderId, WorkCenterId, OperationId, StepOrder, PlannedQuantity, ActualQuantity, ScheduledStart, Status, Note)
+VALUES 
+(5, 3, 1, 1, 300, 150, '2026-02-27 10:00', 'Processing', 'Ưu tiên cao nhất - Đang cắt phôi');
+
+-- Đơn hàng WO-006 được chia làm nhiều công đoạn chờ (Scheduled)
+-- Sử dụng Máy Hàn 02 (ID 2) thay vì Máy 01 để cân bằng tải
+INSERT INTO DispatchingBoard 
+(WorkOrderId, WorkCenterId, OperationId, StepOrder, PlannedQuantity, Status, Note)
+VALUES 
+(6, 4, 3, 1, 1000, 'Scheduled', 'Chờ kiểm tra số lượng lớn'),
+(6, 5, 4, 2, 1000, 'Scheduled', 'Chờ đóng gói sau khi test');
+
+-- Đơn hàng WO-007 gặp lỗi chất lượng ở bước 1
+INSERT INTO DispatchingBoard 
+(WorkOrderId, WorkCenterId, OperationId, StepOrder, PlannedQuantity, ActualQuantity, Status, Note)
+VALUES 
+(7, 3, 1, 1, 50, 20, 'Breakdown_Hold', 'Tạm dừng: Phôi nguyên liệu bị xước bề mặt');
 GO

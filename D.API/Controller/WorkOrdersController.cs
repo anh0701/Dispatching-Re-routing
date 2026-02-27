@@ -29,7 +29,7 @@ public class WorkOrdersController : ControllerBase
     [HttpGet("{id}/route-details")]
     public async Task<IActionResult> GetRouteStep(int id)
     {
-        var result = await workOrdersService.GetRouteStep(id);
-        return Ok(new { result });
+        var data = await workOrdersService.GetRouteStep(id);
+        return Ok(new { data });
     }
 }
