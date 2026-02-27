@@ -38,6 +38,22 @@ public class DispatchingService
         DateTime scheduledEnd = req.ScheduledStart
                                     .AddMinutes(info.SetupTime)
                                     .AddSeconds(totalProductionSeconds);
+                                    
+        bool hasConflict = await _db.ExecuteScalarAsync<int>(@"
+            SELECT COUNT(1)
+            FROM DispatchingBoard
+            WHERE WorkCenterId = @WorkCenterId
+            AND Status IN ('Scheduled','Processing')
+            AND @Start < ScheduledEnd
+            AND @End   > ScheduledStart
+        ", new {
+            req.WorkCenterId,
+            Start = req.ScheduledStart,
+            End = scheduledEnd
+        }) > 0;
+
+        if (hasConflict)
+            return (false, "Máy đang bận trong khoảng thời gian này!");
 
         string sqlInsert = @"
             INSERT INTO DispatchingBoard (

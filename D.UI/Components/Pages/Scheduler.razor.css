@@ -59,9 +59,7 @@
 }
 
 .machine-label {
-    width: 180px;
-    min-width: 180px;
-    max-width: 180px;
+    width: 300px;
 
     font-weight: 600;
     flex-shrink: 0;
@@ -125,3 +123,16 @@
     box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
     transform: translate(-50%, -50%);
 }
+
+.status-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+.status-running { background: #22c55e; }
+.status-maint { background: #f59e0b; }
+.status-break { background: #ef4444; }
+.status-offline {background: grey;}

@@ -92,3 +92,29 @@ CREATE TABLE DispatchingBoard (
     FOREIGN KEY (WorkCenterId, OperationId) REFERENCES ResourceCapabilities(WorkCenterId, OperationId)
 );
 GO
+
+ALTER TABLE DispatchingBoard ADD
+    AssignedBy NVARCHAR(100),
+    AssignedAt DATETIME DEFAULT GETDATE(),
+    LastUpdatedAt DATETIME,
+    LastUpdatedBy NVARCHAR(100);
+GO
+
+CREATE TABLE WorkCenterStatusLog (
+    Id INT IDENTITY PRIMARY KEY,
+    WorkCenterId INT,
+    Status INT,
+    Reason NVARCHAR(255),
+    StartTime DATETIME,
+    EndTime DATETIME NULL,
+    FOREIGN KEY (WorkCenterId) REFERENCES WorkCenters(Id)
+);
+
+CREATE TABLE HoldReasons (
+    Code NVARCHAR(50) PRIMARY KEY,
+    Description NVARCHAR(255)
+);
+
+ALTER TABLE DispatchingBoard ADD HoldReasonCode NVARCHAR(50);
+
+

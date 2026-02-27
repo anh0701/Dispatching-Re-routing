@@ -52,7 +52,8 @@
 
                     <MudSpacer />
 
-                    <MudDatePicker Date="_selectedDate" Label="Chọn ngày" DateChanged="OnDateChanged" Dense="true" />
+                    <MudDatePicker Date="_selectedDate" Label="Chọn ngày" DateChanged="OnDateChanged" Dense="true"
+                                   DateFormat="dd/MM/yyyy" />
                 </MudStack>
 
                 @if (_machines is null)
@@ -78,15 +79,16 @@
                                  @onmouseleave="() => _hoverMachineId = null">
 
                                 <div class="machine-label">
+                                    <span class="status-dot @GetMachineColor(machine.Status)"></span>
                                     @machine.Name
                                 </div>
 
                                 <div class="timeline @( _hoverMachineId == machine.Id && _isDragging ? "timeline-hover" : "" )">
 
                                     @foreach (var task in _board.Where(x =>
-                                                                                                                                   x.WorkCenterId == machine.Id &&
-                                                                                                                                   x.ScheduledStart != null &&
-                                                                                                                                   x.ScheduledEnd != null))
+                                                                                                                                                                       x.WorkCenterId == machine.Id &&
+                                                                                                                                                                       x.ScheduledStart != null &&
+                                                                                                                                                                       x.ScheduledEnd != null))
                                     {
                                         <div class="task-bar" style="
                                             left:@($"{GetLeftPercent(task.ScheduledStart)}%");
@@ -280,4 +282,13 @@
             StateHasChanged();
         }
     }
+
+    string GetMachineColor(int status) => status switch
+    {
+        0 => "status-offline",
+        1 => "status-running",
+        2 => "status-maint",
+        3 => "status-break",
+        _ => ""
+    };
 }
