@@ -5,6 +5,7 @@ services:
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_COLLATION=Latin1_General_100_CI_AS_SC_UTF8
     ports:
       - 5533:1433
     volumes:
