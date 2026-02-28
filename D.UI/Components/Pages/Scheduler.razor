@@ -65,7 +65,7 @@
                     <div id="timelineScroll" class="timeline-wrapper">
 
                         <!-- ===== HEADER GIỜ ===== -->
-                        <div class="time-header">
+                        <div id="timeHeader" class="time-header">
                             @for (int h = 0; h < 24; h++)
                             {
                                 <div class="time-cell">@($"{h:00}:00")</div>
@@ -86,9 +86,9 @@
                                 <div class="timeline @( _hoverMachineId == machine.Id && _isDragging ? "timeline-hover" : "" )">
 
                                     @foreach (var task in _board.Where(x =>
-                                                                                                                                                                                                                                                                                                                                                                                               x.WorkCenterId == machine.Id &&
-                                                                                                                                                                                                                                                                                                                                                                                               x.ScheduledStart != null &&
-                                                                                                                                                                                                                                                                                                                                                                                               x.ScheduledEnd != null))
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                       x.WorkCenterId == machine.Id &&
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                       x.ScheduledStart != null &&
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                       x.ScheduledEnd != null))
                                     {
                                         <div class="task-bar" style="
                                             left:@($"{GetLeftPercent(task.ScheduledStart)}%");
@@ -217,18 +217,20 @@
 
     private async Task<DateTime> GetDropTimeAsync(double clientX)
     {
-        var left = await JS.InvokeAsync<double>(
+        var info = await JS.InvokeAsync<TimelineInfo>(
             "getTimelineOffset",
-            "timelineScroll"
+            "timeHeader"
         );
 
-        var offsetX = clientX - left;
-        if (offsetX < 0) offsetX = 0;
+        var offsetX = clientX - info.left + info.scrollLeft;
 
-        var minutes = offsetX / TimelineWidthPx * (24 * 60);
+        offsetX = Math.Clamp(offsetX, 0, info.width);
+
+        var minutes = offsetX / info.width * (24 * 60);
 
         return _selectedDate.Date.AddMinutes(minutes);
     }
+
     private async Task OnMouseUp(MouseEventArgs e)
     {
         if (!_isDragging) return;
@@ -264,7 +266,15 @@
                 }
                 else
                 {
-                    Snackbar.Add(result.error ?? "Không thể gán lệnh", Severity.Error);
+                    Snackbar.Add(
+                    result.error ?? "Không thể gán lệnh",
+                    Severity.Error,
+                    config =>
+                    {
+                        config.VisibleStateDuration = 6000;
+                        config.RequireInteraction = false;
+                        config.ShowCloseIcon = true;
+                    });
                 }
             }
         }

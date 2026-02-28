@@ -11,8 +11,15 @@ window.scrollTimelineToHour = (hour, totalWidth) => {
     });
 };
 
-window.getTimelineOffset = (id) => {
-    const el = document.getElementById(id);
-    if (!el) return 0;
-    return el.getBoundingClientRect().left;
+window.getTimelineOffset = (headerId) => {
+    const header = document.getElementById(headerId);
+    const wrapper = document.getElementById("timelineScroll");
+
+    const rect = header.getBoundingClientRect();
+
+    return {
+        left: rect.left,
+        width: rect.width,
+        scrollLeft: wrapper.scrollLeft
+    };
 };

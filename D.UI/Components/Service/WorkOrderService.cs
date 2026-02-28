@@ -57,7 +57,7 @@ public class WorkOrderService
                     WorkCenterId = workCenterId,
                     OperationId = operationId, 
                     StepOrder = stepOrder,
-                    ScheduledStart = scheduledStart.ToUniversalTime()
+                    ScheduledStart = scheduledStart
                 });
 
             if (response.IsSuccessStatusCode)

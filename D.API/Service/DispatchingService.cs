@@ -39,21 +39,31 @@ public class DispatchingService
                                     .AddMinutes(info.SetupTime)
                                     .AddSeconds(totalProductionSeconds);
                                     
-        bool hasConflict = await _db.ExecuteScalarAsync<int>(@"
-            SELECT COUNT(1)
-            FROM DispatchingBoard
-            WHERE WorkCenterId = @WorkCenterId
-            AND Status IN ('Scheduled','Processing')
-            AND @Start < ScheduledEnd
-            AND @End   > ScheduledStart
+        var hasConflict = await _db.QueryFirstOrDefaultAsync<dynamic>(@"
+            SELECT TOP 1 
+                wc.Name AS MachineName,
+                db.ScheduledStart,
+                db.ScheduledEnd
+            FROM DispatchingBoard db
+            JOIN WorkCenters wc ON wc.Id = db.WorkCenterId
+            WHERE db.WorkCenterId = @WorkCenterId
+            AND db.Status IN ('Scheduled','Processing')
+            AND @Start < db.ScheduledEnd
+            AND @End   > db.ScheduledStart
+            ORDER BY db.ScheduledStart
         ", new {
             req.WorkCenterId,
             Start = req.ScheduledStart,
             End = scheduledEnd
         }) > 0;
 
-        if (hasConflict)
-            return (false, "Máy đang bận trong khoảng thời gian này!");
+        if (hasConflict != null)
+            return (
+                false, 
+                $"Máy {hasConflict.MachineName} đang bận từ " +
+                $"{hasConflict.ScheduledStart:HH:mm} đến {hasConflict.ScheduledEnd:HH:mm}" +
+                $"Không thể xếp tại {req.ScheduledStart:HH:mm}"
+            );
 
         string sqlInsert = @"
             INSERT INTO DispatchingBoard (
