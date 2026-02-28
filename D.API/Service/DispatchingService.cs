@@ -55,7 +55,7 @@ public class DispatchingService
             req.WorkCenterId,
             Start = req.ScheduledStart,
             End = scheduledEnd
-        }) > 0;
+        });
 
         if (hasConflict != null)
             return (

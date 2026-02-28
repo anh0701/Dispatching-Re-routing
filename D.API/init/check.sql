@@ -51,18 +51,28 @@ GO
 -- WHERE Id IN (4,5)
 
 SELECT 
-    db.WorkOrderId,
-    db.WorkCenterId,
-    db.OperationId,
-    db.ScheduledStart,
-    db.ScheduledEnd,
-    db.Status,
-    wo.OrderNo AS WorkOrderNo,
-    wc.Name AS WorkCenterName
-FROM DispatchingBoard db
-JOIN WorkOrders wo ON wo.Id = db.WorkOrderId
-JOIN WorkCenters wc ON wc.Id = db.WorkCenterId
--- WHERE CAST(db.ScheduledStart AS DATE) = CAST(@Date AS DATE)
-ORDER BY wc.Id, db.ScheduledStart
+                wo.Id AS WorkOrderId, 
+                wo.OrderNo, 
+                p.ProductName,
+                rs.StepOrder, 
+                o.Id AS OperationId, 
+                o.OpCode, 
+                o.Description,
+                wc.Id AS WorkCenterId, 
+                wc.Code AS WorkCenterCode, 
+                wc.Name AS WorkCenterName,
+                rc.CycleTime, 
+                rc.SetupTime
+            FROM WorkOrders wo
+            JOIN Products p ON wo.ProductId = p.Id
+            JOIN ProductionRoutes pr ON p.Id = pr.ProductId AND pr.IsDefault = 1
+            JOIN RouteSteps rs ON pr.Id = rs.RouteId
+            JOIN Operations o ON rs.OperationId = o.Id
+            LEFT JOIN ResourceCapabilities rc ON o.Id = rc.OperationId
+            LEFT JOIN WorkCenters wc 
+                ON rc.WorkCenterId = wc.Id 
+                AND wc.Status = 1
+            WHERE wo.Id = 3
+            ORDER BY rs.StepOrder, rc.CycleTime ASC;
 
 GO

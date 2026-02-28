@@ -28,9 +28,8 @@ public class DispatchingController: ControllerBase
     public async Task<IActionResult> AssignTaskToBoard(AssignmentRequest req)
     {
         var data = await dispatchingService.AssignTaskToBoard(req);
-        if (!data.ok)
-            return BadRequest(data.error);
-        return Ok();
+
+        return Ok(new {data});
     }
 
     // một API check xem máy có đang bận trong khoảng ScheduledStart đến ScheduledEnd không.

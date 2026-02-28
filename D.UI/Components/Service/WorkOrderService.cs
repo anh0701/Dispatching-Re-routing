@@ -61,10 +61,17 @@ public class WorkOrderService
                 });
 
             if (response.IsSuccessStatusCode)
-                return (true, null);
+            {
+                var result = await response.Content.ReadFromJsonAsync<ApiResponse<AssignResult>>();
+                if (result?.Data != null)
+                {
+                    
+                    return (result.Data.Ok, result.Data.Error);
+                }
+            }
 
-            var msg = await response.Content.ReadAsStringAsync();
-            return (false, msg);
+            var rawError = await response.Content.ReadAsStringAsync();
+            return (false, $"Lỗi phản hồi từ Server: {response.StatusCode}");
         }
         catch (Exception ex)
         {
