@@ -74,23 +74,30 @@ GO
 
 CREATE TABLE DispatchingBoard (
     Id INT PRIMARY KEY IDENTITY(1,1),
-    WorkOrderId INT,
-    WorkCenterId INT,
-    OperationId INT,
+    WorkOrderId INT NOT NULL,
+    WorkCenterId INT NOT NULL,
+    OperationId INT NOT NULL,
     StepOrder INT,
+    Sequence INT DEFAULT 0,
     PlannedQuantity INT,
     ActualQuantity INT DEFAULT 0,
-    ScheduledStart DATETIME,
-    ScheduledEnd DATETIME,
+    OriginalStart DATETIME,
+    ScheduledStart DATETIME NOT NULL,
+    ScheduledEnd DATETIME NOT NULL,
     ActualStart DATETIME,
     ActualEnd DATETIME,
     -- Status: 'Scheduled', 'Processing', 'Breakdown_Hold', 'Completed'
     Status NVARCHAR(50) DEFAULT 'Scheduled',
     Note NVARCHAR(MAX), 
+    Version INT DEFAULT 1,
     
     FOREIGN KEY (WorkOrderId) REFERENCES WorkOrders(Id),
-    FOREIGN KEY (WorkCenterId, OperationId) REFERENCES ResourceCapabilities(WorkCenterId, OperationId)
+    FOREIGN KEY (WorkCenterId) REFERENCES WorkCenters(Id),
+    FOREIGN KEY (OperationId) REFERENCES Operations(Id)
 );
+GO
+
+CREATE INDEX IX_Dispatching_Schedule ON DispatchingBoard (WorkCenterId, ScheduledStart, ScheduledEnd);
 GO
 
 ALTER TABLE DispatchingBoard ADD

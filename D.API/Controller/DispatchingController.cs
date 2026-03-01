@@ -37,7 +37,13 @@ public class DispatchingController: ControllerBase
 
     // PUT /api/dispatching-board/{id}/reschedule: 
     // Cập nhật lại thời gian hoặc đổi máy khi có sự thay đổi kế hoạch.
+    [HttpPost("{id}/reschedule")]
+    public async Task<IActionResult> Reschedule(AssignmentRequest req)
+    {
+        var data = await dispatchingService.Reschedule();
 
+        return Ok(new {data});
+    }
 
     // DELETE /api/dispatching-board/{id}: 
     // Hủy phân công một bước công việc (trả về trạng thái chờ)

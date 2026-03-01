@@ -81,11 +81,8 @@
                                 </div>
 
                                 <div class="timeline @( _hoverMachineId == machine.Id && _isDragging ? "timeline-hover" : "" )">
-
-                                    @foreach (var task in _board.Where(x =>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               x.WorkCenterId == machine.Id &&
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               x.ScheduledStart != null &&
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             x.ScheduledEnd != null))
+                                    @foreach (var task in _board
+                                    .Where(x => x.WorkCenterId == machine.Id && x.ScheduledEnd != null))
                                     {
                                         <div class="task-bar" style="
                                             left:@($"{GetLeftPercent(task.ScheduledStart)}%");

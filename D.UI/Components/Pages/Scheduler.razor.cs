@@ -158,7 +158,7 @@ namespace D.UI.Pages
                         _hoverMachineId.Value,
                         op.OperationId,
                         op.StepOrder,
-                        scheduledStart);
+                        scheduledStart.ToUniversalTime());
 
                     if (result.ok)
                     {

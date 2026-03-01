@@ -113,4 +113,14 @@ public class DispatchingService
         var data = await _db.QueryAsync<DispatchingTaskDto>(sql, new { Date = date });
         return data;
     }
+
+    public async Task<dynamic> Reschedule()
+    {
+        string sql = """
+        
+        """;
+
+        var data = await _db.ExecuteAsync(sql);
+        return data;
+    }
 }
