@@ -1,5 +1,3 @@
-using System.Data;
-using Dapper;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController] 
@@ -37,7 +35,7 @@ public class DispatchingController: ControllerBase
 
     // PUT /api/dispatching-board/{id}/reschedule: 
     // Cập nhật lại thời gian hoặc đổi máy khi có sự thay đổi kế hoạch.
-    [HttpPost("{id}/reschedule")]
+    [HttpPut("{id}/reschedule")]
     public async Task<IActionResult> Reschedule(AssignmentRequest req)
     {
         var data = await dispatchingService.Reschedule();
@@ -47,20 +45,40 @@ public class DispatchingController: ControllerBase
 
     // DELETE /api/dispatching-board/{id}: 
     // Hủy phân công một bước công việc (trả về trạng thái chờ)
-
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> CancelJob (int id)
+    {
+        var data = await dispatchingService.CancelJob(id);
+        return Ok(new {data});
+    }
 
     // PATCH /api/dispatching-board/{id}/start: 
     // Cập nhật ActualStart và chuyển Status sang Processing
-
+    [HttpPatch("{id}/start")]
+    public async Task<IActionResult> ChangeProcessing(int id)
+    {
+        var data = await dispatchingService.ChangeProcessing(id);
+        return Ok(new {data});
+    }
 
     // PATCH /api/dispatching-board/{id}/report-progress:
     // Input: ActualQuantity (số lượng hoàn thành thêm).
     // Logic: Cộng dồn vào ActualQuantity hiện tại.
-
+    [HttpPatch("{id}/report-progress")]
+    public async Task<IActionResult> GetProgress (int id, GetProgressReq req)
+    {
+        var data = dispatchingService.GetProgress(id, req);
+        return Ok(new {data});
+    }
 
     // PATCH /api/dispatching-board/{id}/complete: 
     // Cập nhật ActualEnd, chuyển Status sang Completed. 
     // Nếu là bước cuối cùng của Route, cập nhật Status của WorkOrders thành Completed.
-
+    [HttpPatch("{id}/complete")]
+    public async Task<IActionResult> ChangeComplete(int id)
+    {
+        var data = dispatchingService.ChangeComplete(id);
+        return Ok(new {data});
+    }
 
 }

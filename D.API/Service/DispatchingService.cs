@@ -123,4 +123,98 @@ public class DispatchingService
         var data = await _db.ExecuteAsync(sql);
         return data;
     }
+
+    public async Task<bool> CancelJob (int id)
+    {
+        string sql = """
+            // UPDATE WorkOrders SET Status = 0 WHERE WorkOrderId = @id;
+            UPDATE DispatchingBoard 
+            SET Status = 'Scheduled' 
+            WHERE WorkOrderId = @id;
+        """;
+        var data = await _db.ExecuteAsync(sql, id) > 0;
+        return data;
+    }
+
+    public async Task<bool> ChangeProcessing(int id)
+    {
+        string sql = """
+            UPDATE DispatchingBoard 
+            SET 
+                Status = 'Processing',
+                ActualStart =  GETDATE()
+            WHERE WorkOrderId = @id;
+        """;
+        var data = await _db.ExecuteAsync(sql, new {
+            WorkOrderId = id
+        }) > 0;
+        return data;
+    }
+
+    public async Task<bool> GetProgress (int id, GetProgressReq req)
+    {
+        var sqlSelect = """
+            SELECT ActualQuantity
+            FROM DispatchingBoard
+            WHERE WorkOrderId = @id
+        """;
+
+        var selectRes = await _db.QueryFirstOrDefaultAsync<dynamic>(sqlSelect, new
+        {
+            WorkOrderId = id
+        });
+        int actualQuantity = selectRes?.ActualQuantity + req.ActualQuantity;
+        var sql = """
+            UPDATE DispatchingBoard 
+            SET ActualQuantity = @actualQuantity
+            WHERE WorkOrderId = @id
+        """;
+        var data = await _db.ExecuteAsync(sql, new
+        {
+            ActualQuantity = actualQuantity,
+            WorkOrderId = id   
+        }) > 0;
+        return data;
+    }
+
+    public async Task<bool> ChangeComplete (int id)
+    {
+        var sql = """
+            UPDATE DispatchingBoard
+            SET Status = 'Completed'
+            ActualEnd = GETDATE()
+            WHERE Id = @id;
+        """;
+        var data = await _db.ExecuteAsync(sql, id) > 0;
+
+        var sqlMaxStep = """
+        SELECT MAX(rs.StepOrder) AS MaxStep
+        FROM RouteSteps rs
+        JOIN ProductionRoutes pr ON rs.RouteId = pr.Id
+        JOIN WorkOrders wo ON wo.ProductId = pr.ProductId
+        WHERE wo.Id = @id
+        AND pr.IsDefault = 1;
+        """;
+        var maxStep = await _db.QueryFirstOrDefaultAsync<dynamic>(sqlMaxStep, id);
+
+        var sqlCurrentStep = """
+            SELECT StepOrder
+            FROM DispatchingBoard
+            WHERE WorkOrderId = @id
+        """;
+
+        var currentStep = await _db.QueryFirstOrDefaultAsync<dynamic>(sqlCurrentStep, id);
+        
+        if (maxStep?.MaxStep == currentStep?.StepOrder)
+        {
+            var sqlMax = """
+            UPDATE WorkOrders
+            SET Status = 2 -- Completed
+            WHERE Id = @id;
+            """;
+            var res = await _db.ExecuteAsync(sqlMax, id) > 0;
+            return res;
+        }
+        return data;
+    }
 }
