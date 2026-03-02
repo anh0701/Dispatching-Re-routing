@@ -17,7 +17,7 @@ public class DispatchingService
         return data;
     }
 
-    public async Task<(bool ok, string? error)> AssignTaskToBoard(AssignmentRequest req)
+    public async Task<AssignTaskResult> AssignTaskToBoard(AssignmentRequest req)
     {
         string sqlInfo = @"
             SELECT rc.CycleTime, rc.SetupTime, wo.Quantity 
@@ -32,7 +32,10 @@ public class DispatchingService
             req.OperationId
         });
 
-        if (info == null) return (false, "Máy không hỗ trợ công đoạn này!");
+        if (info == null) return new AssignTaskResult{
+            Ok = false, 
+            Error = "Máy không hỗ trợ công đoạn này!"
+        };
 
         double totalProductionSeconds = info.Quantity * info.CycleTime;
         DateTime scheduledEnd = req.ScheduledStart
@@ -58,12 +61,12 @@ public class DispatchingService
         });
 
         if (hasConflict != null)
-            return (
-                false, 
-                $"Máy {hasConflict.MachineName} đang bận từ " +
-                $"{hasConflict.ScheduledStart:HH:mm} đến {hasConflict.ScheduledEnd:HH:mm}" +
+            return new AssignTaskResult{
+                Ok = false, 
+                Error = $"Máy {hasConflict.MachineName} đang bận từ " +
+                $"{hasConflict.ScheduledStart:HH:mm} đến {hasConflict.ScheduledEnd:HH:mm}. " +
                 $"Không thể xếp tại {req.ScheduledStart:HH:mm}"
-            );
+            };
 
         string sqlInsert = @"
             INSERT INTO DispatchingBoard (
@@ -87,8 +90,8 @@ public class DispatchingService
         });
 
         return result > 0
-            ? (true, null)
-            : (false, "Không thể ghi vào DispatchingBoard");
+            ? new AssignTaskResult{ Ok = true, Error = null}
+            : new AssignTaskResult{ Ok = false, Error = "Không thể ghi vào DispatchingBoard"};
     }
 
     public async Task<IEnumerable<DispatchingTaskDto>> GetBoard(DateTime date)
