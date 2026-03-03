@@ -16,5 +16,16 @@ public class WorkCentersService
         var data = await _db.QueryAsync(sql);
         return data;
     }
+
+    public async Task<bool> ReportBreakdown(int id)
+    {
+        string sql = """
+            UPDATE WorkCenters
+            SET Status = 2
+            WHERE Id = @id
+        """;
+        var data = await _db.ExecuteAsync(sql, id) > 0;
+        return data;
+    }
     
 }

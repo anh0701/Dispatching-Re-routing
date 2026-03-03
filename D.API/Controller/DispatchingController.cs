@@ -1,14 +1,18 @@
+using D.API.Hubs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 [ApiController] 
 [Route("api/dispatching-board")]
 public class DispatchingController: ControllerBase
 {
     private readonly DispatchingService dispatchingService;
+    private readonly IHubContext<BroadcastHub> _hubContext;
 
-    public DispatchingController(DispatchingService dispatchingService)
+    public DispatchingController(IHubContext<BroadcastHub> hubContext, DispatchingService dispatchingService)
     {
         this.dispatchingService = dispatchingService;
+        _hubContext = hubContext;
     }
     
     // Lấy toàn bộ dữ liệu đang hiển thị trên bảng 
@@ -68,6 +72,8 @@ public class DispatchingController: ControllerBase
     public async Task<IActionResult> GetProgress (int id, GetProgressReq req)
     {
         var data = dispatchingService.GetProgress(id, req);
+        await _hubContext.Clients.All.SendAsync("ReceiveUpdate", id, req.ActualQuantity);
+        
         return Ok(new {data});
     }
 

@@ -1,0 +1,57 @@
+@* @page "/dispatch"
+@using D.UI.Models
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
+
+<h3>Bảng Điều Độ Trực Tuyến</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Sản lượng thực tế</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in DispatchList)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.ActualQuantity</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private HubConnection? hubConnection;
+    private List<DispatchingBoard> DispatchList = new(); // Giả sử đã load dữ liệu ban đầu ở đây
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 1. Cấu hình kết nối đến API
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl("http://localhost:5096/dispatchHub") 
+            .WithAutomaticReconnect() // Tự động kết nối lại nếu rớt mạng
+            .Build();
+
+        // 2. LẮNG NGHE TIN NHẮN "ReceiveUpdate"
+        hubConnection.On<int, int>("ReceiveUpdate", (id, newQuantity) =>
+        {
+            var item = DispatchList.FirstOrDefault(x => x.Id == id);
+            if (item != null)
+            {
+                item.ActualQuantity = newQuantity; // Cập nhật số liệu mới
+                InvokeAsync(StateHasChanged); 
+            }
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    // Đóng kết nối khi tắt trang
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null) await hubConnection.DisposeAsync();
+    }
+} *@

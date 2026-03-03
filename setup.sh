@@ -7,5 +7,6 @@
 
 # cd D.UI
 # dotnet add package MudBlazor
+# dotnet add package Microsoft.AspNetCore.SignalR.Client
 
 dotnet restore

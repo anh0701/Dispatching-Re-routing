@@ -1,4 +1,5 @@
 using System.Data;
+using D.API.Hubs;
 using Microsoft.Data.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,12 +23,16 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 
 builder.Services.AddScoped<DispatchingService>(); 
 builder.Services.AddScoped<WorkOrdersService>(); 
 builder.Services.AddScoped<WorkCentersService>(); 
 
 var app = builder.Build();
+// app.MapHub<BroadcastHub>("/dispatchHub");
+
+app.MapHub<BroadcastHub>("/dispatchHub");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

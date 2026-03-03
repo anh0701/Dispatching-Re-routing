@@ -1,16 +1,18 @@
-using System.Data;
-using Dapper;
+using D.API.Hubs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 [ApiController]
 [Route("api/work-orders")]
 public class WorkOrdersController : ControllerBase
 {
     private readonly WorkOrdersService workOrdersService;
+    private readonly IHubContext<BroadcastHub> _hubContext;
 
-    public WorkOrdersController(WorkOrdersService workOrdersService)
+    public WorkOrdersController(WorkOrdersService workOrdersService, IHubContext<BroadcastHub> hubContext)
     {
         this.workOrdersService = workOrdersService;
+        _hubContext = hubContext;
     }
 
     // Lấy danh sách các Work Orders có trạng thái Planned (chưa sản xuất)
@@ -32,4 +34,5 @@ public class WorkOrdersController : ControllerBase
         var data = await workOrdersService.GetRouteStep(id);
         return Ok(new { data });
     }
+
 }
