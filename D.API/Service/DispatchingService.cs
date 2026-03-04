@@ -135,7 +135,7 @@ public class DispatchingService
             SET Status = 'Scheduled' 
             WHERE WorkOrderId = @id;
         """;
-        var data = await _db.ExecuteAsync(sql, id) > 0;
+        var data = await _db.ExecuteAsync(sql, new { id }) > 0;
         return data;
     }
 
@@ -188,7 +188,7 @@ public class DispatchingService
             ActualEnd = GETDATE()
             WHERE Id = @id;
         """;
-        var data = await _db.ExecuteAsync(sql, id) > 0;
+        var data = await _db.ExecuteAsync(sql, new { id }) > 0;
 
         var sqlMaxStep = """
         SELECT MAX(rs.StepOrder) AS MaxStep
@@ -198,7 +198,7 @@ public class DispatchingService
         WHERE wo.Id = @id
         AND pr.IsDefault = 1;
         """;
-        var maxStep = await _db.QueryFirstOrDefaultAsync<dynamic>(sqlMaxStep, id);
+        var maxStep = await _db.QueryFirstOrDefaultAsync<dynamic>(sqlMaxStep, new { id });
 
         var sqlCurrentStep = """
             SELECT StepOrder
@@ -206,7 +206,7 @@ public class DispatchingService
             WHERE WorkOrderId = @id
         """;
 
-        var currentStep = await _db.QueryFirstOrDefaultAsync<dynamic>(sqlCurrentStep, id);
+        var currentStep = await _db.QueryFirstOrDefaultAsync<dynamic>(sqlCurrentStep, new { id });
         
         if (maxStep?.MaxStep == currentStep?.StepOrder)
         {
@@ -215,7 +215,7 @@ public class DispatchingService
             SET Status = 2 -- Completed
             WHERE Id = @id;
             """;
-            var res = await _db.ExecuteAsync(sqlMax, id) > 0;
+            var res = await _db.ExecuteAsync(sqlMax, new { id }) > 0;
             return res;
         }
         return data;

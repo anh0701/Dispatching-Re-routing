@@ -81,7 +81,7 @@
                                 </div>
 
                                 <div class="timeline @( _hoverMachineId == machine.Id && _isDragging ? "timeline-hover" : "" )">
-                                    @foreach (var task in _board
+                                    @foreach (var task in (_board ?? Enumerable.Empty<DispatchTaskDto>())
                                     .Where(x => x.WorkCenterId == machine.Id && x.ScheduledEnd != null))
                                     {
                                         <div class="task-bar" style="

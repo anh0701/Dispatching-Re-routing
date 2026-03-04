@@ -22,17 +22,26 @@ builder.Services.AddControllers()
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddControllers();
 builder.Services.AddSignalR();
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
+builder.Services.AddControllers();
 
 builder.Services.AddScoped<DispatchingService>(); 
 builder.Services.AddScoped<WorkOrdersService>(); 
 builder.Services.AddScoped<WorkCentersService>(); 
 
-var app = builder.Build();
-// app.MapHub<BroadcastHub>("/dispatchHub");
+builder.Services.AddCors(options => {
+    options.AddPolicy("BlazorPolicy", policy => {
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); 
+    });
+});
 
-app.MapHub<BroadcastHub>("/dispatchHub");
+var app = builder.Build();
+
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -42,7 +51,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseRouting();
+app.UseWebSockets();
+app.UseCors("BlazorPolicy");
 app.MapControllers();
+
+app.MapHub<BroadcastHub>("/dispatchHub");
 
 app.Run();
 

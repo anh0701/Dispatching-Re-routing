@@ -24,7 +24,7 @@ public class WorkCentersService
             SET Status = 2
             WHERE Id = @id
         """;
-        var data = await _db.ExecuteAsync(sql, id) > 0;
+        var data = await _db.ExecuteAsync(sql, new { id }) > 0;
         return data;
     }
     

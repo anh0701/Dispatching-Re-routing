@@ -1,6 +1,9 @@
 using D.UI.Components.Pages;
+using D.UI.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using MudBlazor;
 
@@ -12,6 +15,8 @@ namespace D.UI.Pages
         [Inject] public IDialogService DialogService { get; set; } = default!;
         [Inject] public ISnackbar Snackbar { get; set; } = default!;
         [Inject] public IJSRuntime JS { get; set; } = default!;
+        [Inject] public HttpClient Http { get; set; } = default!;
+        [Inject] public NavigationManager Navigation { get; set; } = default!;
 
         protected List<JobItem>? _jobs;
         protected List<Machine>? _machines;
@@ -29,14 +34,68 @@ namespace D.UI.Pages
         protected bool _scrolled;
 
         protected Dictionary<int, HashSet<int>> _jobMachineMap = new();
+        private string? _myConnectionId;
+        private HubConnection? hubConnection;
 
 
         protected override async Task OnInitializedAsync()
         {
-            _jobs = await WorkOrderService.GetPendingJobsAsync();
-            _machines = await WorkOrderService.GetWorkCentersAsync();
-            await PreloadJobCapabilities();
-            await LoadBoardOnly();
+            try
+            {
+                _jobs = await WorkOrderService.GetPendingJobsAsync();
+                _machines = await WorkOrderService.GetWorkCentersAsync();
+                await PreloadJobCapabilities();
+                await LoadBoardOnly();
+                Console.WriteLine("Load 1");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Init error: {ex}");
+            }
+
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl("http://localhost:5096/dispatchHub")
+                .WithAutomaticReconnect()
+                .Build();
+
+            hubConnection.On<int>("ReceiveUpdate", async (dispatchId) =>
+            {
+                try
+                {
+                    if (_isDragging) return;
+                    await InvokeAsync(LoadBoardOnly);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"ReceiveUpdate error: {ex}");
+                }
+            });
+
+            try
+            {
+                await hubConnection.StartAsync();
+                _myConnectionId = hubConnection.ConnectionId;
+                Console.WriteLine("SignalR connected");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SignalR Connection Error: {ex}");
+            }
+
+            hubConnection.Closed += async (error) =>
+            {
+                Console.WriteLine($"SignalR closed: {error}");
+                await Task.Delay(2000);
+            };
+          
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (hubConnection != null)
+            {
+                await hubConnection.DisposeAsync();
+            }
         }
 
         protected string GetMachineColor(int status) => status switch
@@ -62,10 +121,26 @@ namespace D.UI.Pages
             }
         }
 
+        private bool _loadingBoard;
         protected async Task LoadBoardOnly()
         {
-            _board = await WorkOrderService.GetBoardAsync(_selectedDate);
-            StateHasChanged();
+            if (_loadingBoard) return;
+            _loadingBoard = true;
+
+            try
+            {
+                var board = await WorkOrderService.GetBoardAsync(_selectedDate);
+                _board = board ?? new List<DispatchTaskDto>();
+                await InvokeAsync(StateHasChanged);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"LoadBoardOnly error: {ex}");
+            }
+            finally
+            {
+                _loadingBoard = false;
+            }
         }
 
         protected async Task OnDateChanged(DateTime? date)
