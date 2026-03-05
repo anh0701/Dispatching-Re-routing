@@ -1,10 +1,16 @@
 # D
 
-![demo](image.png)
-
-![demo assign machine success](image-1.png)
-
-![demo assign machine error](image-3.png)
+<table border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><img src="image-1.png" alt="Ảnh 1" width="100%" style="display: block;"></td>
+    <td><img src="image-3.png" alt="Ảnh 2" width="100%" style="display: block;"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="image.png" alt="Ảnh 3" width="100%" style="display: block;">
+    </td>
+  </tr>
+</table>
 
 ## Tài liệu
 
