@@ -69,9 +69,9 @@ public class DispatchingController: ControllerBase
     // Input: ActualQuantity (số lượng hoàn thành thêm).
     // Logic: Cộng dồn vào ActualQuantity hiện tại.
     [HttpPatch("{id}/report-progress")]
-    public async Task<IActionResult> GetProgress (int id, GetProgressReq req)
+    public async Task<IActionResult> UpdateProgress (int id, GetProgressReq req)
     {
-        var data = dispatchingService.GetProgress(id, req);
+        var data = dispatchingService.UpdateProgress(id, req);
         await _hubContext.Clients.All.SendAsync("ReceiveUpdate", id, req.ActualQuantity);
         
         return Ok(new {data});
